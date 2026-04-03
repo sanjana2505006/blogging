@@ -1,139 +1,291 @@
-# Blog Web (Next.js + Supabase + AI Summaries)
+# Blog Web - Next.js + Supabase + Gemini
 
-A simple blogging platform built with **Next.js** and **Supabase** with:
+A full-stack blogging platform built for the assignment requirements.
 
-- Role-based access control for **Author / Viewer / Admin**
-- `users`, `posts`, `comments` schema in Supabase
-- Automatic **~200-word** post summaries using the **Google Gemini API**
-- Post listing **search** and **pagination**
+Core capabilities:
+- Role-based access (`author`, `viewer`, `admin`)
+- Supabase-backed schema (`users`, `posts`, `comments`)
+- AI-generated post summaries (~200 words) using Gemini
+- Search + pagination in post listing
+- Create/edit posts and comments with permission checks
 
-## Tech Stack
+---
 
-- **Frontend/Backend:** Next.js (App Router, TypeScript)
-- **Auth + Database:** Supabase Auth + Supabase Postgres
-- **RBAC:** Supabase Row Level Security (RLS)
-- **AI Summaries:** Google Gemini API (`@google/generative-ai`)
+## 1) Assignment Coverage
 
-## AI Tools Used (Development)
+This project covers the required areas from the brief:
 
-- Cursor: used for implementing and wiring the Next.js + Supabase integration (routing, RLS checks, and API handlers).
-- (Optional) Any Gemini prompt helper/editor features: used to iterate on the summary prompt and keep output strictly plain text.
+- **Tech stack:** Next.js + Supabase Auth + Supabase Postgres + Git/GitHub + Gemini API
+- **Roles:** Author, Viewer, Admin with role-specific permissions
+- **Blog post features:** title, image, body, comments, edit flow, listing
+- **AI feature:** summary generated once on post creation and stored in DB
+- **Database:** tables and relationships in Supabase with RLS
+- **Repository + README:** setup, run, deploy, architecture notes
 
-## Database Setup (Supabase)
+---
 
-1. Create a Supabase project.
-2. Run the SQL file: `supabase/schema.sql`
-3. Configure Auth settings as needed (email/password is used in the app).
-4. Assign roles for testing (Supabase Dashboard > SQL editor):
+## 2) Tech Stack
 
-   ```sql
-   update public.users
-   set role = 'author'
-   where email = 'your-email@example.com';
-   ```
+- **App framework:** Next.js App Router (TypeScript)
+- **UI:** Custom CSS (editorial theme)
+- **Auth:** Supabase Auth (email/password)
+- **Database:** Supabase Postgres
+- **Authorization:** Row Level Security (RLS) policies
+- **AI integration:** `@google/generative-ai`
 
-   Set `role = 'admin'` similarly.
+---
 
-## Environment Variables
+## 3) Project Structure
 
-Copy `.env.example` to `.env.local` and set:
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `GOOGLE_GEMINI_API_KEY`
-- `SUPABASE_SECRET_KEY` (needed for `/api/auth/signup`)
-
-## Run Locally
-
-```bash
-cd "blog-web"
-npm install
-npm run dev
+```txt
+src/
+  app/
+    api/
+      auth/signup/route.ts
+      posts/create/route.ts
+      posts/[id]/route.ts
+      comments/route.ts
+    login/page.tsx
+    signup/page.tsx
+    posts/new/page.tsx
+    posts/[id]/page.tsx
+    posts/[id]/edit/page.tsx
+    page.tsx
+  components/
+    NavBar.tsx
+    AuthActions.tsx
+    PostForm.tsx
+    CommentForm.tsx
+  lib/
+    summarize.ts
+    getUserRole.ts
+    authBypass.ts
+    supabase/
+      client.ts
+      server.ts
+      admin.ts
+supabase/
+  schema.sql
 ```
 
-Then open the dev URL shown in the terminal.
+---
 
-For final/auth-realistic behavior, keep bypass flags disabled:
+## 4) Database Schema (Supabase)
+
+Run `supabase/schema.sql` in Supabase SQL Editor.
+
+### Tables
+
+1. **`public.users`**
+   - `id` (uuid, PK, references `auth.users.id`)
+   - `name` (text)
+   - `email` (text)
+   - `role` (`author` | `viewer` | `admin`)
+
+2. **`public.posts`**
+   - `id` (uuid, PK)
+   - `title` (text)
+   - `body` (text)
+   - `image_url` (text, optional)
+   - `author_id` (uuid, FK -> `users.id`)
+   - `summary` (text)
+   - `created_at`, `updated_at`
+
+3. **`public.comments`**
+   - `id` (uuid, PK)
+   - `post_id` (uuid, FK -> `posts.id`)
+   - `user_id` (uuid, FK -> `users.id`)
+   - `comment_text` (text)
+   - `created_at`
+
+### Trigger
+
+- `handle_new_user` trigger syncs new auth users into `public.users`.
+
+### RLS Policies
+
+- Public read:
+  - `posts_public_read`
+  - `comments_public_read`
+  - `users_public_read_basic` (for author byline joins)
+- Author/Admin write:
+  - `posts_author_insert_own`
+  - `posts_author_update_own`
+  - `posts_admin_update_any`
+- Viewer/Author/Admin comment:
+  - `comments_role_insert`
+- Admin role management:
+  - `users_admin_update_role`
+
+---
+
+## 5) Authentication and Roles
+
+### Signup
+
+- UI page: `/signup`
+- API route: `POST /api/auth/signup`
+- Uses Supabase Admin API (`SUPABASE_SECRET_KEY`) to create users with `email_confirm: true` for easier testing.
+
+### Login
+
+- UI page: `/login`
+- Uses Supabase browser client sign-in.
+
+### Role assignment
+
+Default role is `viewer`. Promote users via SQL:
+
+```sql
+update public.users
+set role = 'author'
+where email = 'your-email@example.com';
+```
+
+For admin:
+
+```sql
+update public.users
+set role = 'admin'
+where email = 'admin-email@example.com';
+```
+
+---
+
+## 6) AI Summary Flow
+
+When a post is published:
+
+1. `POST /api/posts/create` inserts post row with `summary = null`
+2. `generateGeminiSummary()` is called
+3. Summary text is written back to `posts.summary`
+4. Listing/detail pages display summary from DB
+
+### Cost optimization
+
+- Summary is generated **once per post creation**
+- Stored in DB to avoid repeated API calls on page reads
+
+### Model fallback
+
+The app tries multiple Gemini model names in order, reducing breakage when one model alias is unavailable.
+
+---
+
+## 7) Search and Pagination
+
+Implemented in `src/app/page.tsx`:
+
+- Query parameter `q`: searches title and summary
+- Query parameter `page`: paginates listing
+- Page size is currently `6`
+
+Examples:
+- `/` -> first page, no filter
+- `/?q=devops` -> filtered results
+- `/?q=devops&page=2` -> second page filtered
+
+---
+
+## 8) Environment Variables
+
+Create `.env.local` from `.env.example`.
+
+Required:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+GOOGLE_GEMINI_API_KEY=
+SUPABASE_SECRET_KEY=
+```
+
+Optional (local testing only):
 
 ```env
 AUTH_BYPASS=false
 NEXT_PUBLIC_AUTH_BYPASS=false
 ```
 
-## How the AI Feature Works
+> Keep bypass flags `false` for final behavior/demo.
 
-When an Author/Admin publishes a new post (`POST /api/posts/create`):
+---
 
-1. The app inserts the post into `public.posts` with `summary = NULL`.
-2. The server generates a ~200-word summary using Gemini.
-3. The app updates the same row with `posts.summary`.
+## 9) Local Setup
 
-Token/cost optimizations:
+```bash
+cd "/Users/sanjana./blog web/blog-web"
+npm install
+npm run dev
+```
 
-- Summary generation happens **only once** (on post creation) and the result is stored in the database to avoid repeated API calls.
+Open the URL printed in terminal (usually `http://localhost:3000`).
 
-## Role-Based Access Logic
+---
 
-Permissions match the assignment requirement:
+## 10) Test Plan (Checklist)
 
-- **Author**
-  - Can create posts (`posts_author_insert_own`)
-  - Can edit their own posts (`posts_author_update_own`)
-  - Can view comments on posts (comment read policy is public)
-- **Viewer**
-  - Can read posts and summaries (public select policy)
-  - Can comment on posts (`comments_role_insert`)
-- **Admin**
-  - Can view all posts (public select policy)
-  - Can edit any post (`posts_admin_update_any`)
-  - Can update user roles (`users_admin_update_role`)
+### Auth
+- [ ] Sign up from `/signup`
+- [ ] Sign in from `/login`
+- [ ] Sign out from nav
 
-## Listing Features
+### Roles
+- [ ] `viewer`: can read + comment, cannot create/edit posts
+- [ ] `author`: can create + edit own post
+- [ ] `admin`: can edit any post and manage roles via SQL
 
-- Search by title/summary using `q` query param on `/`
-- Pagination on listing using `page` query param (`PAGE_SIZE=6` in app)
+### Post flow
+- [ ] Create post with title/image/body
+- [ ] Verify summary appears
+- [ ] Verify listing card + detail page
 
-## Feature Logic Summary (Authentication + Flow)
+### Listing
+- [ ] Search by keyword (`q`)
+- [ ] Pagination prev/next (`page`)
 
-- Authentication uses Supabase email/password.
-- After signup, a Supabase trigger (`handle_new_user`) creates/updates a row in `public.users` with a default role of `viewer`.
-- Role checks are enforced in two layers:
-  - UI route protection (e.g., only Author/Admin can access `/posts/new` and `/posts/[id]/edit`)
-  - Database-level RLS policies for `users`, `posts`, and `comments`
+### Comments
+- [ ] Add comment on detail page
+- [ ] Verify comment appears in list
 
-## Development Understanding
+---
 
-- Cost optimization: summary generation runs **only once** on post creation and is stored in `posts.summary` to prevent repeated Gemini calls.
-- Key architectural decisions:
-  - Server-side API routes (`/api/posts/create`, `/api/posts/[id]`, `/api/comments`) handle writes so RLS + role checks remain consistent.
-  - RLS is the source of truth for permissions (not only frontend checks).
-- Bug encountered & resolution (example):
-  - Next.js route handler typing/signature mismatch for the dynamic `[id]` API route was fixed by awaiting `context.params` in the handler.
+## 11) Deployment (VPS)
 
-## Deployment (VPS)
+Standard Next.js Node deployment:
 
-This app is deployed as a standard Next.js server on your VPS:
+1. Install Node.js (20+)
+2. Clone repo on VPS
+3. Create `.env.local` with production keys
+4. Build and run:
 
-1. Install Node.js (same major version as your local dev; Node 20+ recommended).
-2. Clone/pull your repository on the VPS.
-3. Create `.env.local` on the VPS with the required environment variables.
-4. Build and start:
+```bash
+npm install
+npm run build
+npm run start
+```
 
-   ```bash
-   npm install
-   npm run build
-   npm run start
-   ```
+5. Expose service port (default 3000) through firewall/security group
 
-5. Ensure the VPS firewall/security group allows inbound traffic for the port you run on (commonly `3000`).
+---
 
-## Notes for Submission
+## 12) Submission Notes
 
-Deliverables to include in your submission:
+Provide:
 
-1. GitHub repository link
+1. GitHub repository URL
 2. Live deployed URL
-3. Short written explanation covering:
-   - AI tools used and why
-   - Feature logic: authentication flow, role-based access, and AI summary flow
+3. Short explanation covering:
+   - AI tool used and why
+   - Auth + role logic
+   - Post + summary generation flow
+   - Token/cost optimization strategy
+   - One bug encountered and how it was fixed
+
+---
+
+## 13) Known Notes
+
+- Old posts keep old summary text; if AI config changes, create a new post to verify updated summary behavior.
+- If login/session appears inconsistent, restart dev server after env changes.
 
