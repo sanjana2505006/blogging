@@ -7,7 +7,6 @@ export async function generateGeminiSummary(title: string, body: string): Promis
   }
 
   const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
   const prompt = [
     'You are summarizing a blog post.',
@@ -21,8 +20,25 @@ export async function generateGeminiSummary(title: string, body: string): Promis
     `Body: ${body}`
   ].join('\n')
 
-  const result = await model.generateContent(prompt)
-  const text = result.response.text().trim()
-  return text
+  const modelCandidates = [
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash',
+    'gemini-2.5-flash'
+  ]
+
+  let lastError: unknown = null
+  for (const modelName of modelCandidates) {
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName })
+      const result = await model.generateContent(prompt)
+      const text = result.response.text().trim()
+      if (text) return text
+    } catch (error) {
+      lastError = error
+    }
+  }
+
+  throw new Error(`All Gemini model attempts failed: ${String((lastError as any)?.message ?? lastError)}`)
 }
 

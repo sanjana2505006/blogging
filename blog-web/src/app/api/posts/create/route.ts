@@ -2,24 +2,36 @@ import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { generateGeminiSummary } from '@/lib/summarize'
 import type { Role } from '@/lib/roles'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { getBypassUser, isAuthBypassEnabled } from '@/lib/authBypass'
 
 function isAllowedRole(role: Role | null) {
   return role === 'author' || role === 'admin'
 }
 
 export async function POST(req: Request) {
-  const supabase = await createSupabaseServerClient()
+  const bypass = isAuthBypassEnabled()
+  const supabase = bypass ? createSupabaseAdminClient() : await createSupabaseServerClient()
+  let userId: string | null = null
+  let role: Role | null = null
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
+  if (bypass) {
+    const bypassUser = await getBypassUser()
+    userId = bypassUser.id
+    role = 'admin'
+  } else {
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    userId = user.id
 
-  const { data: roleRow, error: roleError } = await supabase.from('users').select('role').eq('id', user.id).single()
-  if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 })
+    const { data: roleRow, error: roleError } = await supabase.from('users').select('role').eq('id', user.id).single()
+    if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 })
 
-  const role = roleRow?.role as Role | null
+    role = roleRow?.role as Role | null
+  }
   if (!isAllowedRole(role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   let payload: any
@@ -42,7 +54,7 @@ export async function POST(req: Request) {
       title,
       body,
       image_url,
-      author_id: user.id,
+      author_id: userId,
       summary: null
     })
     .select('id,title,body,image_url,author_id,summary,created_at')

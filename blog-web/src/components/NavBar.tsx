@@ -3,12 +3,18 @@ import AuthActions from '@/components/AuthActions'
 import { getUserRole } from '@/lib/getUserRole'
 import { AUTHOR_ROLES, type Role } from '@/lib/roles'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { isAuthBypassEnabled } from '@/lib/authBypass'
 
 export default async function NavBar() {
+  const bypass = isAuthBypassEnabled()
   let userEmail: string | null = null
   let role: Role | null = null
 
   try {
+    if (bypass) {
+      userEmail = 'auth-bypass@local'
+      role = 'admin'
+    } else {
     const supabase = await createSupabaseServerClient()
     const {
       data: { user }
@@ -18,6 +24,7 @@ export default async function NavBar() {
 
     const roleRes = await getUserRole()
     role = roleRes.role
+    }
   } catch {
     // If cookies/Supabase is not configured yet, still render a usable navbar.
   }

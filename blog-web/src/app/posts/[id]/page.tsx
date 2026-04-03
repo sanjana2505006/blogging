@@ -4,8 +4,13 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import CommentForm from '@/components/CommentForm'
 import { getUserRole } from '@/lib/getUserRole'
 
-export default async function PostDetailPage({ params }: { params: { id: string } }) {
+export default async function PostDetailPage({
+  params
+}: {
+  params: Promise<{ id: string }>
+}) {
   const supabase = await createSupabaseServerClient()
+  const { id } = await params
 
   const {
     data: { user }
@@ -16,7 +21,7 @@ export default async function PostDetailPage({ params }: { params: { id: string 
   const { data: post, error: postError } = await supabase
     .from('posts')
     .select('id,title,body,image_url,summary,author_id,users(name)')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (postError || !post) return notFound()
@@ -29,7 +34,7 @@ export default async function PostDetailPage({ params }: { params: { id: string 
   const { data: comments, error: commentsError } = await supabase
     .from('comments')
     .select('id,comment_text,user_id,users(name)')
-    .eq('post_id', params.id)
+    .eq('post_id', id)
     .order('created_at', { ascending: true })
 
   if (commentsError) {
@@ -46,7 +51,7 @@ export default async function PostDetailPage({ params }: { params: { id: string 
           <p className="article-byline">By {authorName ?? 'Unknown'}</p>
           {canEdit ? (
             <p style={{ margin: '1rem 0 0' }}>
-              <Link href={`/posts/${params.id}/edit`} className="btn btn-ghost btn-sm">
+              <Link href={`/posts/${id}/edit`} className="btn btn-ghost btn-sm">
                 Edit post
               </Link>
             </p>
@@ -71,7 +76,7 @@ export default async function PostDetailPage({ params }: { params: { id: string 
           Comments
         </h2>
 
-        <CommentForm postId={params.id} userEmail={userEmail} />
+        <CommentForm postId={id} userEmail={userEmail} />
 
         <div className="stack">
           {comments && comments.length > 0 ? (

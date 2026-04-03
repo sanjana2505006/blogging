@@ -1,25 +1,37 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Role } from '@/lib/roles'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { getBypassUser, isAuthBypassEnabled } from '@/lib/authBypass'
 
 export async function POST(
   req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
-  const supabase = await createSupabaseServerClient()
+  const bypass = isAuthBypassEnabled()
+  const supabase = bypass ? createSupabaseAdminClient() : await createSupabaseServerClient()
 
   const { id } = await context.params
+  let userId: string | null = null
+  let role: Role | null = null
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
+  if (bypass) {
+    const bypassUser = await getBypassUser()
+    userId = bypassUser.id
+    role = 'admin'
+  } else {
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    userId = user.id
 
-  const { data: roleRow, error: roleError } = await supabase.from('users').select('role').eq('id', user.id).single()
-  if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 })
+    const { data: roleRow, error: roleError } = await supabase.from('users').select('role').eq('id', user.id).single()
+    if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 })
 
-  const role = roleRow?.role as Role | null
+    role = roleRow?.role as Role | null
+  }
   if (!role || (role !== 'author' && role !== 'admin')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -32,7 +44,7 @@ export async function POST(
 
   if (postError || !post) return NextResponse.json({ error: 'Post not found' }, { status: 404 })
 
-  const canEdit = role === 'admin' || (role === 'author' && post.author_id === user.id)
+  const canEdit = role === 'admin' || (role === 'author' && post.author_id === userId)
   if (!canEdit) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   let payload: any

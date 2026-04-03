@@ -1,20 +1,32 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Role } from '@/lib/roles'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import { getBypassUser, isAuthBypassEnabled } from '@/lib/authBypass'
 
 export async function POST(req: Request) {
-  const supabase = await createSupabaseServerClient()
+  const bypass = isAuthBypassEnabled()
+  const supabase = bypass ? createSupabaseAdminClient() : await createSupabaseServerClient()
+  let userId: string | null = null
+  let role: Role | null = null
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
+  if (bypass) {
+    const bypassUser = await getBypassUser()
+    userId = bypassUser.id
+    role = 'viewer'
+  } else {
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    userId = user.id
 
-  const { data: roleRow, error: roleError } = await supabase.from('users').select('role').eq('id', user.id).single()
-  if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 })
+    const { data: roleRow, error: roleError } = await supabase.from('users').select('role').eq('id', user.id).single()
+    if (roleError) return NextResponse.json({ error: roleError.message }, { status: 500 })
 
-  const role = roleRow?.role as Role | null
+    role = roleRow?.role as Role | null
+  }
   if (!role || !['viewer', 'author', 'admin'].includes(role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
@@ -34,7 +46,7 @@ export async function POST(req: Request) {
 
   const { data: inserted, error } = await supabase
     .from('comments')
-    .insert({ post_id, user_id: user.id, comment_text })
+    .insert({ post_id, user_id: userId, comment_text })
     .select('id,post_id,user_id,comment_text')
     .single()
 

@@ -2,13 +2,16 @@ import { redirect } from 'next/navigation'
 import { getUserRole } from '@/lib/getUserRole'
 import { AUTHOR_ROLES, type Role } from '@/lib/roles'
 import PostForm from '@/components/PostForm'
+import { isAuthBypassEnabled } from '@/lib/authBypass'
 
 export const dynamic = 'force-dynamic'
 
 export default async function NewPostPage() {
+  if (!isAuthBypassEnabled()) {
   const { userId, role } = await getUserRole()
   if (!userId || !role || !(AUTHOR_ROLES as Role[]).includes(role)) {
     redirect('/login?next=/posts/new')
+  }
   }
 
   return (
