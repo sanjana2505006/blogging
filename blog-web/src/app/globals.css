@@ -507,3 +507,125 @@ a:hover {
   margin: 0;
   font-size: 1rem;
 }
+
+/* Vogue-inspired editorial overrides */
+:root {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cormorant), 'Times New Roman', serif;
+
+  --bg-page: #f8f8f8;
+  --bg-elevated: #ffffff;
+  --bg-subtle: #f5f5f5;
+  --border: #dfdfdf;
+  --border-strong: #bfbfbf;
+
+  --text: #111111;
+  --text-muted: #4a4a4a;
+  --text-faint: #7a7a7a;
+
+  --accent: #111111;
+  --accent-hover: #000000;
+  --accent-soft: rgba(17, 17, 17, 0.08);
+}
+
+body {
+  letter-spacing: 0.01em;
+  background: var(--bg-page);
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(209, 178, 120, 0.18), transparent 30%),
+    radial-gradient(circle at 85% 20%, rgba(170, 141, 219, 0.14), transparent 34%),
+    radial-gradient(circle at 50% 90%, rgba(111, 163, 155, 0.13), transparent 36%),
+    linear-gradient(180deg, #fcfaf7 0%, #f4efe8 44%, #f3f1ee 100%);
+  background-attachment: fixed;
+}
+
+.main {
+  max-width: 1024px;
+  padding-top: 3rem;
+}
+
+.page-eyebrow {
+  color: var(--text-faint);
+  letter-spacing: 0.2em;
+}
+
+.page-title {
+  font-size: clamp(2.25rem, 6vw, 3.5rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.card {
+  border-radius: 0;
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.card-hover:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.btn {
+  border-radius: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+}
+
+.btn-primary {
+  background: #111111;
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #000000;
+}
+
+.btn-ghost {
+  background: #ffffff;
+  color: #111111;
+  border: 1px solid #111111;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: #111111;
+  color: #ffffff;
+}
+
+.nav {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.brand {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 1.35rem;
+}
+
+.nav-link {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+}
+
+.hero {
+  border-bottom: 2px solid #111111;
+  padding-bottom: 2.5rem;
+}
+
+.post-card-title,
+.article-title,
+.section-title {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.post-card-summary,
+.prose,
+.comment-body {
+  line-height: 1.85;
+}
