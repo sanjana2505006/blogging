@@ -5,6 +5,7 @@ A simple blogging platform built with **Next.js** and **Supabase** with:
 - Role-based access control for **Author / Viewer / Admin**
 - `users`, `posts`, `comments` schema in Supabase
 - Automatic **~200-word** post summaries using the **Google Gemini API**
+- Post listing **search** and **pagination**
 
 ## Tech Stack
 
@@ -40,6 +41,7 @@ Copy `.env.example` to `.env.local` and set:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `GOOGLE_GEMINI_API_KEY`
+- `SUPABASE_SECRET_KEY` (needed for `/api/auth/signup`)
 
 ## Run Locally
 
@@ -50,6 +52,13 @@ npm run dev
 ```
 
 Then open the dev URL shown in the terminal.
+
+For final/auth-realistic behavior, keep bypass flags disabled:
+
+```env
+AUTH_BYPASS=false
+NEXT_PUBLIC_AUTH_BYPASS=false
+```
 
 ## How the AI Feature Works
 
@@ -78,6 +87,11 @@ Permissions match the assignment requirement:
   - Can view all posts (public select policy)
   - Can edit any post (`posts_admin_update_any`)
   - Can update user roles (`users_admin_update_role`)
+
+## Listing Features
+
+- Search by title/summary using `q` query param on `/`
+- Pagination on listing using `page` query param (`PAGE_SIZE=6` in app)
 
 ## Feature Logic Summary (Authentication + Flow)
 

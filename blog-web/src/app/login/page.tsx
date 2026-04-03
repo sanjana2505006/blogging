@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseClient } from '@/lib/supabase/client'
 
@@ -11,56 +11,25 @@ export default function LoginPage() {
       ? new URLSearchParams(window.location.search).get('next') ?? '/'
       : '/'
 
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
-  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [cooldownUntil, setCooldownUntil] = useState<number>(0)
-  const [now, setNow] = useState<number>(Date.now())
-
-  useEffect(() => {
-    if (cooldownUntil <= Date.now()) return
-    const timer = setInterval(() => setNow(Date.now()), 250)
-    return () => clearInterval(timer)
-  }, [cooldownUntil])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (Date.now() < cooldownUntil) {
-      setError('Please wait a few seconds before trying again.')
-      return
-    }
-
     setError(null)
     setLoading(true)
 
     try {
       const supabase = getSupabaseClient()
-      if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { name } }
-        })
-        if (error) throw error
-        if (!data.session) {
-          setError(
-            'Check your email to confirm your account, then sign in. Or disable email confirmation in Supabase Auth settings for local testing.'
-          )
-          return
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
 
       router.push(nextUrl)
       router.refresh()
     } catch (err: any) {
       setError(err?.message ?? 'Authentication failed')
-      setCooldownUntil(Date.now() + 10000)
     } finally {
       setLoading(false)
     }
@@ -72,22 +41,14 @@ export default function LoginPage() {
         <div>
           <p className="page-eyebrow">Account</p>
           <h1 className="page-title" style={{ fontSize: '1.75rem' }}>
-            {mode === 'signin' ? 'Welcome back' : 'Create an account'}
+            Welcome back
           </h1>
           <p className="page-desc" style={{ marginTop: '0.5rem' }}>
-            {mode === 'signin' ? 'Sign in to comment and access your workspace.' : 'Join to read, comment, and publish (if you have author access).'}
+            Sign in to comment and access your workspace.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="card card-pad stack">
-          {mode === 'signup' ? (
-            <div className="field">
-              <label className="label" htmlFor="name">
-                Your name
-              </label>
-              <input id="name" className="input" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} autoComplete="name" />
-            </div>
-          ) : null}
           <div className="field">
             <label className="label" htmlFor="email">
               Email
@@ -113,25 +74,19 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               type="password"
-              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              autoComplete="current-password"
             />
           </div>
           {error ? <p className="error-text">{error}</p> : null}
-          <button type="submit" className="btn btn-primary" disabled={loading || now < cooldownUntil}>
-            {loading ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Working…' : 'Sign in'}
           </button>
         </form>
 
         <div style={{ textAlign: 'center' }}>
-          {mode === 'signin' ? (
-            <button type="button" className="btn btn-ghost" style={{ width: '100%' }} onClick={() => setMode('signup')}>
-              Need an account? Sign up
-            </button>
-          ) : (
-            <button type="button" className="btn btn-ghost" style={{ width: '100%' }} onClick={() => setMode('signin')}>
-              Already have an account? Sign in
-            </button>
-          )}
+          <a href="/signup" className="btn btn-ghost" style={{ width: '100%' }}>
+            Need an account? Sign up
+          </a>
         </div>
       </div>
     </div>

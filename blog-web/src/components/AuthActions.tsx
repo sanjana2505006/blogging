@@ -15,9 +15,14 @@ export default function AuthActions({ userEmail }: { userEmail: string | null })
 
   if (!userEmail) {
     return (
-      <a href="/login" className="btn btn-primary btn-sm">
-        Log in
-      </a>
+      <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <a href="/login" className="btn btn-primary btn-sm">
+          Log in
+        </a>
+        <a href="/signup" className="btn btn-ghost btn-sm">
+          Sign up
+        </a>
+      </div>
     )
   }
 

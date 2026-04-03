@@ -109,6 +109,13 @@ for select
 to authenticated
 using (id = auth.uid());
 
+-- Public can read basic author details for post/comment bylines.
+drop policy if exists "users_public_read_basic" on public.users;
+create policy "users_public_read_basic"
+on public.users
+for select
+using (true);
+
 -- Admin can update user roles (for author/viewer/admin setup)
 drop policy if exists "users_admin_update_role" on public.users;
 create policy "users_admin_update_role"
