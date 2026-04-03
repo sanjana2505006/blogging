@@ -12,12 +12,13 @@ export default async function NewPostPage() {
   }
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="stack-lg">
       <PostForm mode="create" actionUrl="/api/posts/create" />
-      <p style={{ color: '#6b7280', margin: 0 }}>
-        Summary is generated automatically when you publish the post.
+      <p className="hint card card-pad" style={{ margin: 0 }}>
+        After you publish, an AI-generated summary (~200 words) is saved and shown on the home page and here. Add your{' '}
+        <code style={{ fontSize: '0.85em', background: 'var(--bg-subtle)', padding: '0.15rem 0.35rem', borderRadius: 4 }}>GOOGLE_GEMINI_API_KEY</code>{' '}
+        in <code style={{ fontSize: '0.85em', background: 'var(--bg-subtle)', padding: '0.15rem 0.35rem', borderRadius: 4 }}>.env.local</code> for real summaries.
       </p>
     </div>
   )
 }
-

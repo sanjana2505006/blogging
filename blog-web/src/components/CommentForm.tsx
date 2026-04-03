@@ -42,27 +42,33 @@ export default function CommentForm({
 
   if (!userEmail) {
     return (
-      <p style={{ marginTop: 0 }}>
-        <a href="/login">Login</a> to comment.
-      </p>
+      <div className="card" style={{ padding: '1rem 1.25rem', background: 'var(--bg-subtle)', borderStyle: 'dashed' }}>
+        <p className="muted" style={{ margin: 0, fontSize: '0.9375rem' }}>
+          <a href="/login">Log in</a> to join the conversation.
+        </p>
+      </div>
     )
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 10 }}>
-      <h3 style={{ marginBottom: 0 }}>Add a comment</h3>
+    <form onSubmit={onSubmit} className="stack">
+      <label className="label" htmlFor="comment">
+        Add a comment
+      </label>
       <textarea
+        id="comment"
+        className="textarea"
         value={commentText}
         onChange={(e) => setCommentText(e.target.value)}
-        placeholder="Write your comment..."
+        placeholder="Share your thoughts…"
         required
         minLength={2}
+        rows={4}
       />
-      {error ? <p style={{ color: '#b91c1c', margin: 0 }}>{error}</p> : null}
-      <button type="submit" disabled={loading || !commentText.trim()}>
-        {loading ? 'Posting...' : 'Post Comment'}
+      {error ? <p className="error-text">{error}</p> : null}
+      <button type="submit" className="btn btn-primary btn-sm" disabled={loading || !commentText.trim()} style={{ alignSelf: 'flex-start' }}>
+        {loading ? 'Posting…' : 'Post comment'}
       </button>
     </form>
   )
 }
-

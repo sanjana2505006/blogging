@@ -25,26 +25,24 @@ export default async function NavBar() {
   const canCreate = role ? AUTHOR_ROLES.includes(role) : false
 
   return (
-    <header
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        padding: '16px 12px',
-        borderBottom: '1px solid #e5e7eb',
-        background: 'white'
-      }}
-    >
-      <Link href="/" style={{ fontWeight: 800 }}>
-        Blog Web
-      </Link>
-      <nav style={{ display: 'flex', gap: 12 }}>
-        <Link href="/">Home</Link>
-        {canCreate ? <Link href="/posts/new">New Post</Link> : null}
-      </nav>
-
-      <AuthActions userEmail={userEmail} />
+    <header className="nav">
+      <div className="nav-inner">
+        <Link href="/" className="brand">
+          Blog Web
+        </Link>
+        <nav className="nav-links" aria-label="Primary">
+          <Link href="/" className="nav-link">
+            Home
+          </Link>
+          {canCreate ? (
+            <Link href="/posts/new" className="nav-link">
+              New post
+            </Link>
+          ) : null}
+        </nav>
+        <div className="nav-spacer" />
+        <AuthActions userEmail={userEmail} />
+      </div>
     </header>
   )
 }
-

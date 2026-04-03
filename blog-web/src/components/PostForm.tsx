@@ -57,29 +57,69 @@ export default function PostForm({
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
-      <h2 style={{ marginTop: 0 }}>{mode === 'create' ? 'Create Post' : 'Edit Post'}</h2>
-      <div style={{ display: 'grid', gap: 6 }}>
-        <label>Title</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Post title" required />
+    <form onSubmit={onSubmit} className="card card-pad stack-lg">
+      <div>
+        <p className="page-eyebrow">{mode === 'create' ? 'Compose' : 'Edit'}</p>
+        <h1 className="page-title" style={{ fontSize: '1.75rem' }}>
+          {mode === 'create' ? 'New post' : 'Edit post'}
+        </h1>
       </div>
-      <div style={{ display: 'grid', gap: 6 }}>
-        <label>Featured Image URL</label>
+
+      <div className="field">
+        <label className="label" htmlFor="post-title">
+          Title
+        </label>
         <input
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="https://... (optional)"
+          id="post-title"
+          className="input"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="A clear, compelling title"
+          required
         />
       </div>
-      <div style={{ display: 'grid', gap: 6 }}>
-        <label>Body</label>
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write your post..." required />
+
+      <div className="field">
+        <label className="label" htmlFor="post-image">
+          Featured image URL
+        </label>
+        <input
+          id="post-image"
+          className="input"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          placeholder="https://… (optional)"
+        />
       </div>
-      {error ? <p style={{ color: '#b91c1c', margin: 0 }}>{error}</p> : null}
-      <button type="submit" disabled={loading}>
-        {loading ? 'Working...' : mode === 'create' ? 'Publish' : 'Save Changes'}
-      </button>
+
+      <div className="field">
+        <label className="label" htmlFor="post-body">
+          Body
+        </label>
+        <textarea
+          id="post-body"
+          className="textarea"
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Write your post…"
+          required
+          rows={minRows(body)}
+        />
+      </div>
+
+      {error ? <p className="error-text">{error}</p> : null}
+
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <button type="submit" className="btn btn-primary" disabled={loading}>
+          {loading ? 'Saving…' : mode === 'create' ? 'Publish' : 'Save changes'}
+        </button>
+      </div>
     </form>
   )
 }
 
+function minRows(text: string) {
+  const base = 12
+  const extra = Math.min(8, Math.floor(text.split('\n').length / 4))
+  return base + extra
+}

@@ -19,7 +19,7 @@ export default async function EditPostPage({ params }: { params: { id: string } 
   if (!canEdit) return notFound()
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div className="stack-lg">
       <PostForm
         mode="edit"
         actionUrl={`/api/posts/${params.id}`}
@@ -30,4 +30,3 @@ export default async function EditPostPage({ params }: { params: { id: string } 
     </div>
   )
 }
-

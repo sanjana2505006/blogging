@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import CommentForm from '@/components/CommentForm'
 import { getUserRole } from '@/lib/getUserRole'
@@ -21,9 +22,7 @@ export default async function PostDetailPage({ params }: { params: { id: string 
   if (postError || !post) return notFound()
 
   const postAny = post as any
-  const authorName = Array.isArray(postAny.users)
-    ? postAny.users?.[0]?.name
-    : postAny.users?.name
+  const authorName = Array.isArray(postAny.users) ? postAny.users?.[0]?.name : postAny.users?.name
 
   const userEmail = user?.email ?? null
 
@@ -34,57 +33,63 @@ export default async function PostDetailPage({ params }: { params: { id: string 
     .order('created_at', { ascending: true })
 
   if (commentsError) {
-    // Comments failing shouldn't break reading the post.
     console.error(commentsError)
   }
 
+  const canEdit = role && userId && (role === 'admin' || (role === 'author' && post.author_id === userId))
+
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <article style={{ background: 'white', border: '1px solid #e5e7eb', padding: 16, borderRadius: 12 }}>
-        <h1 style={{ marginTop: 0 }}>{post.title}</h1>
-        <p style={{ margin: '8px 0 0 0', color: '#6b7280' }}>Author: {authorName ?? 'Unknown'}</p>
+    <div className="stack-lg">
+      <article className="card card-pad">
+        <div className="article-hero">
+          <h1 className="article-title">{post.title}</h1>
+          <p className="article-byline">By {authorName ?? 'Unknown'}</p>
+          {canEdit ? (
+            <p style={{ margin: '1rem 0 0' }}>
+              <Link href={`/posts/${params.id}/edit`} className="btn btn-ghost btn-sm">
+                Edit post
+              </Link>
+            </p>
+          ) : null}
+        </div>
 
-        {role && userId && (role === 'admin' || (role === 'author' && post.author_id === userId)) ? (
-          <a
-            href={`/posts/${params.id}/edit`}
-            style={{ display: 'inline-block', marginTop: 8, marginBottom: 10 }}
-          >
-            Edit post
-          </a>
-        ) : null}
+        {post.image_url ? <img src={post.image_url} alt="" className="article-cover" /> : null}
 
-        {post.image_url ? (
-          <img src={post.image_url} alt="" style={{ width: '100%', maxHeight: 320, objectFit: 'cover', borderRadius: 10, marginTop: 12 }} />
-        ) : null}
+        <h2 className="section-title">Summary</h2>
+        <div className="prose muted" style={{ marginBottom: '1.5rem' }}>
+          <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{post.summary ?? 'Summary not generated yet.'}</p>
+        </div>
 
-        <h3 style={{ marginTop: 16, marginBottom: 6 }}>Summary</h3>
-        <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{post.summary ?? 'Summary not generated yet.'}</p>
-
-        <h3 style={{ marginTop: 16, marginBottom: 6 }}>Body</h3>
-        <div style={{ whiteSpace: 'pre-wrap' }}>{post.body}</div>
+        <h2 className="section-title">Article</h2>
+        <div className="prose">
+          <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{post.body}</p>
+        </div>
       </article>
 
-      <section style={{ background: 'white', border: '1px solid #e5e7eb', padding: 16, borderRadius: 12 }}>
-        <h2 style={{ marginTop: 0 }}>Comments</h2>
+      <section className="card card-pad stack-lg">
+        <h2 className="section-title" style={{ margin: 0 }}>
+          Comments
+        </h2>
 
         <CommentForm postId={params.id} userEmail={userEmail} />
 
-        <div style={{ display: 'grid', gap: 12, marginTop: 18 }}>
+        <div className="stack">
           {comments && comments.length > 0 ? (
             comments.map((c: any) => (
-              <div key={c.id} style={{ border: '1px solid #e5e7eb', padding: 12, borderRadius: 10 }}>
-                <p style={{ margin: 0, color: '#6b7280', fontSize: 13 }}>
+              <div key={c.id} className="comment-item">
+                <p className="comment-author">
                   {Array.isArray(c.users) ? c.users?.[0]?.name ?? 'Unknown' : c.users?.name ?? 'Unknown'}
                 </p>
-                <p style={{ margin: '6px 0 0 0', whiteSpace: 'pre-wrap' }}>{c.comment_text}</p>
+                <p className="comment-body">{c.comment_text}</p>
               </div>
             ))
           ) : (
-            <p style={{ color: '#6b7280' }}>No comments yet.</p>
+            <p className="muted" style={{ margin: 0 }}>
+              No comments yet. Be the first to share your thoughts.
+            </p>
           )}
         </div>
       </section>
     </div>
   )
 }
-

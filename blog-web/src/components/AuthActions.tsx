@@ -15,16 +15,20 @@ export default function AuthActions({ userEmail }: { userEmail: string | null })
 
   if (!userEmail) {
     return (
-      <a href="/login" style={{ marginLeft: 'auto' }}>
-        Login
+      <a href="/login" className="btn btn-primary btn-sm">
+        Log in
       </a>
     )
   }
 
   return (
-    <button onClick={handleSignOut} style={{ marginLeft: 'auto', background: '#111827' }}>
-      Sign out
-    </button>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <span className="muted" style={{ fontSize: '0.8125rem', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={userEmail}>
+        {userEmail}
+      </span>
+      <button type="button" className="btn btn-ghost btn-sm" onClick={handleSignOut}>
+        Sign out
+      </button>
+    </div>
   )
 }
-

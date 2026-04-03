@@ -1,10 +1,15 @@
 'use client'
 
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 let client: SupabaseClient | null = null
 
+/**
+ * Browser Supabase client — must use @supabase/ssr so the session is stored in
+ * cookies that match createServerClient() on the server. Plain createClient()
+ * uses localStorage only, so the server never sees you as logged in.
+ */
 export function getSupabaseClient(): SupabaseClient {
   if (client) return client
 
@@ -14,7 +19,6 @@ export function getSupabaseClient(): SupabaseClient {
     throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY')
   }
 
-  client = createClient(supabaseUrl, supabaseAnonKey)
+  client = createBrowserClient(supabaseUrl, supabaseAnonKey)
   return client
 }
-
